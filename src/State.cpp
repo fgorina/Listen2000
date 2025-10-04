@@ -870,7 +870,7 @@ void tState::HandleNMEA2000Msg(const tN2kMsg &N2kMsg)
     break;
 
   default:
-    break;
+    Serial.print(" Unhandled PGN "); Serial.println(N2kMsg.PGN);
   }
   Serial.println("-----------------------------------");
 }
