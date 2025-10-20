@@ -57,6 +57,7 @@ void tState::initArrays(){
   }
 
   bool tState::checkPGN(unsigned long pgn){
+
     for(int i = 0; i < MAX_PGNS; i++){
       if(pgns[i] == pgn){
         return true;
@@ -115,8 +116,84 @@ bool tState::ParseN2kPGN129285(const tN2kMsg &N2kMsg, uint16_t &Start, uint16_t 
   return true;
 }
 
+void tState::handleWindDatum(const tN2kMsg &N2kMsg){
+  if (N2kMsg.PGN != 65345)
+    return ;
+  int index = 0;
+ unsigned int prefix  = N2kMsg.Get2ByteUInt(index); // Raymarine
+
+ double windDatum = N2kMsg.Get2ByteDouble(0.0001, index) / PI * 180.0;
+ double rollingAverage = N2kMsg.Get2ByteDouble(0.0001, index) / PI * 180.0;;
+ 
+ Serial.print("Wind Datum: "); Serial.println(windDatum, 2);
+ Serial.print("Rolling Average: "); Serial.println(rollingAverage);
+  
+}
 // PGN direct handles
 
+void tState::handleSeatalkPilotMode(const tN2kMsg &N2kMsg){
+
+  if (N2kMsg.PGN != 65379)
+    return ;
+
+  int index = 0;
+  unsigned char c;
+  unsigned int prefix  = N2kMsg.Get2ByteUInt(index);
+  unsigned int pilotMode = N2kMsg.Get2ByteUInt(index);
+  
+  Serial.print("Pilot Mode: ");
+  Serial.print(pilotMode); 
+  switch(pilotMode){
+    case 0 : 
+      Serial.println(" Standby");
+      break;
+
+   case 64: 
+      Serial.println(" Auto (compass)");
+      break;
+
+   case 256: 
+      Serial.println("  Wind");
+      break;
+
+   case 384 : 
+      Serial.println(" Track");
+      break;
+
+   case 385 : 
+      Serial.println(" No Drift");
+      break;
+
+    default:
+      break;
+
+
+
+  }
+
+}
+
+void tState::handleSeatalkLockedheading(const tN2kMsg &N2kMsg){
+
+  if (N2kMsg.PGN != 65360)
+    return ;
+
+  int index = 0;
+  unsigned char c;
+  unsigned int SID  = N2kMsg.GetByte(index);
+  double targetHeadingTrue = N2kMsg.Get2ByteDouble(0.0001, index);
+  double targetHeadingMag = N2kMsg.Get2ByteDouble(0.0001, index);
+  
+  Serial.print("SID: ");
+  Serial.println(SID); 
+  Serial.print("Heading true: ");
+  Serial.println(targetHeadingTrue / PI * 180, 1);
+  Serial.print("Heading magnetic: ");
+  Serial.println(targetHeadingMag / PI * 180, 1);
+
+}
+
+ 
 /* We receive this message every second.
 Will use to set the RTC
 SystemDate is Days since 1 January 1970.
@@ -293,10 +370,9 @@ void tState::handleHeadingTrackControl(const tN2kMsg &N2kMsg)
 
     Serial.print("Command Rudder Angle: ");
     Serial.println(CommandedRudderAngle);
-    Serial.print("Heading to steer course: (");
-    Serial.print(HeadingToSteerCourse / 3.141592 * 180);
-    Serial.print(") ");
-    Serial.println(HeadingToSteerCourse);
+    Serial.print("Heading to steer course: ");
+    Serial.println(HeadingToSteerCourse / PI * 180);
+
     Serial.print("Track: ");
     Serial.println(Track);
 
@@ -315,7 +391,7 @@ void tState::handleHeadingTrackControl(const tN2kMsg &N2kMsg)
     Serial.print("Off Track limit: ");
     Serial.println(OffTrackLimit);
     Serial.print("Vessel heading: ");
-    Serial.println(VesselHeading);
+    Serial.println(VesselHeading / PI * 180);
   }
 }
 
@@ -769,20 +845,34 @@ void tState::HandleNMEA2000Msg(const tN2kMsg &N2kMsg)
   if (!trackData) {
     return;
   } 
+  
   if(!checkSource(N2kMsg.Source) || !checkPGN(N2kMsg.PGN)){ // So we are not inundated!!!!
     return;
   } 
+    
 
     Serial.print("- PGN ");
     Serial.print(N2kMsg.PGN);
     Serial.print(" ");
     Serial.print(toStringPgn(N2kMsg.PGN));
     Serial.print(" from: ");
-    Serial.print(N2kMsg.Source);
+    Serial.println(N2kMsg.Source);
 
 
   switch (N2kMsg.PGN)
   {
+    case 65345:
+      handleWindDatum(N2kMsg);
+      break;
+
+    case 65360:
+      handleSeatalkLockedheading(N2kMsg);
+      break;
+
+    case 65379:
+      handleSeatalkPilotMode(N2kMsg);
+      break;
+
   case 126992:
     handleSystemDateTime(N2kMsg);
     break;

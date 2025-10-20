@@ -15,7 +15,7 @@ protected:
 
 
     bool sources[MAX_SOURCES];
-    unsigned long pgns[MAX_SOURCES];     
+    unsigned long pgns[MAX_PGNS];     
 
     void handleSystemDateTime(const tN2kMsg &N2kMsg);
     void handleProductInfo(const tN2kMsg &N2kMsg);
@@ -38,6 +38,10 @@ protected:
     void handleGNSS(const tN2kMsg &N2kMsg);
     void handleEngineParamRapid(const tN2kMsg &N2kMsg);
     void handleEngineDynamicParameters(const tN2kMsg &N2kMsg);
+
+    void handleSeatalkPilotMode(const tN2kMsg &N2kMsg);
+    void handleSeatalkLockedheading(const tN2kMsg &N2kMsg);
+    void handleWindDatum(const tN2kMsg &N2kMsg);
 
     bool ParseN2kPGN129285(const tN2kMsg &N2kMsg, uint16_t &Start, uint16_t &nItems, uint16_t &Database, uint16_t &Route,
                                    tN2kNavigationDirection &NavDirection, char *RouteName, size_t RouteNameBufSize, tN2kGenericStatusPair &SupplementaryData,

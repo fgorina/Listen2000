@@ -1,5 +1,5 @@
-#define ESP32_CAN_TX_PIN GPIO_NUM_19
-#define ESP32_CAN_RX_PIN GPIO_NUM_27
+#define ESP32_CAN_TX_PIN GPIO_NUM_16
+#define ESP32_CAN_RX_PIN GPIO_NUM_17
 
 #include <Arduino.h>
 #include <time.h>
@@ -12,6 +12,29 @@
 #include "Utils.h"
 
 tN2kDeviceList *pN2kDeviceList;
+
+const unsigned long ReceiveMessages[] PROGMEM = {126208L, // Request, Command and "Reconocer?"
+                                                 127245L, // Rudder Angle
+                                                 127250L, // * Rhumb - Vessel heading
+                                                 127258L, // * Magnetic Variation
+                                                 128259L, // Speed over water
+                                                 129026L, // * Fast COG, SOG update
+                                                 129029L, // * Position GNSS (Date, time, lat, lon)
+                                                 129283L, // * XTE
+                                                 129284L, // * Route information
+                                                 129285L, // * Active Waypoint data
+                                                 130306L, // * Wind data
+
+                                                 // Other not in EVO-1 Document
+
+                                                 127237L, // Heading Track Control
+                                                 126720L, // Seatalk1 Pilot Mode
+                                                 61184L,  // Seatalk: Wireless Keypad  Control
+                                                 65288L,  // Seatalk Alarm
+                                                 65379L,  // Seatalk Pilot Mode
+                                                 65360L,  // Seatalk Pilot Locked Heading
+                                                 0};
+
 
 const tNMEA2000::tProductInformation LogProductInformation PROGMEM = {
     1300,       // N2kVersion
@@ -64,6 +87,7 @@ void readPreferences()
 
 void HandleNMEA2000Msg(const tN2kMsg &N2kMsg)
 {
+
     state->HandleNMEA2000Msg(N2kMsg);
 }
 void OnN2kOpen()
@@ -99,7 +123,7 @@ void setup_NMEA2000()
 
   // NMEA2000.ExtendTransmitMessages(TransmitMessages); //We don't transmit messages
 
- // NMEA2000.ExtendReceiveMessages(ReceiveMessages);
+  NMEA2000.ExtendReceiveMessages(ReceiveMessages);
   NMEA2000.SetMsgHandler(HandleNMEA2000Msg);
 
   // Set Group Handlers
@@ -131,6 +155,7 @@ void n2KTask(void *parameter)
 {
   while (true)
   {
+ 
     NMEA2000.ParseMessages();
     vTaskDelay(10);
   }
@@ -146,7 +171,7 @@ void doCommand(char *s){
       Serial.println("Tracking data stopped. on to restart");
     } 
     else if(strncmp(s,"cls", 3)==0){
-      state->clearAllPGNs();
+      state->clearAllSources();
       Serial.println("Cleared all sources ");
     } 
     else if (strncmp(s,"clp", 3)==0){
